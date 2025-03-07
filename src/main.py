@@ -1,6 +1,7 @@
 """
 Main file to run the game
 """
+
 import logging
 import argparse
 import json
@@ -29,5 +30,3 @@ if __name__ == "__main__":
 
     # Run the game
     main(args.game, logger)
-
-
