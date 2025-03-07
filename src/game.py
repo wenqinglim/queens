@@ -78,14 +78,9 @@ class Queens:
     def is_queen_same_color_zone(self, x: int, y: int) -> bool:
         """Check if the queen is in the same color zone as another queen"""
         queen_color_zone = self.get_color_zone(x, y)
-        if queen_color_zone in self.color_zone_queens.keys():
-            return True
-        else:
-            self.color_zone_queens[queen_color_zone] = (x, y)
-            self.logger.info(
-                f"Added queen to color zone {queen_color_zone}: {self.color_zone_queens[queen_color_zone]}"
-            )
-            return False
+        if queen_color_zone is not None:
+            return queen_color_zone in self.color_zone_queens.keys()
+        return False
 
     def is_queen_same_corner(self, x: int, y: int) -> bool:
         """Check if the queen is in the corner of another queen"""
@@ -200,6 +195,14 @@ class Queens:
                             self.logger.info("Queen placement is valid")
                             self.grid[x][y] = 1
                             n_valid_queens += 1
+
+                            # Add queen to color zone
+                            queen_color_zone = self.get_color_zone(x, y)
+                            self.color_zone_queens[queen_color_zone] = (x, y)
+                            self.logger.info(
+                                f"Added queen to color zone {queen_color_zone}: {self.color_zone_queens[queen_color_zone]}"
+                            )
+
                             # Resize queen image to fit grid cell (100x100)
                             scaled_queen = pygame.transform.scale(
                                 self.queen_image, (100, 100)
