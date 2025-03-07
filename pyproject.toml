@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 pygame = "^2.6.1"
 numpy = "^2.2.3"
+ortools = "^9.12.4544"
 
 
 [build-system]
