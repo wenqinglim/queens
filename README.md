@@ -1,7 +1,8 @@
 # queens
 Recreate Queens game as seen on LinkedIn: https://www.linkedin.com/games/queens/
 
-![Queens Game Screenshot](assets/images/queen_games_v1.png)
+<img src="assets/images/queens_game_v1.png" width="400" height="460" alt="Queens Game Screenshot">
+
 
 ## Dev Setup
 ### Environment setup
