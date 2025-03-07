@@ -10,6 +10,7 @@ The zones force the grid to only have a single possible solution.
 import pygame
 import logging
 import numpy as np
+from config import color_map
 
 
 class Queens:
@@ -143,13 +144,6 @@ class Queens:
             for j in range(self.n):
                 pygame.draw.rect(screen, (0, 0, 0), (i * 100, j * 100, 100, 100))
 
-        # self.logger.info(f"Grid: {self.grid}")
-        color_map = {
-            "red": (255, 200, 200),
-            "blue": (200, 200, 255),
-            "green": (200, 255, 200),
-            "yellow": (255, 255, 200),
-        }
         # Display color zones
         for color_zone in self.color_zones:
             color = color_zone["color"]
