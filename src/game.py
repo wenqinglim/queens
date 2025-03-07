@@ -182,12 +182,13 @@ class Queens:
 
             # Update the display when user places a queen
             for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                # If it is a left click, place or remove a queen
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     x, y = pygame.mouse.get_pos()
                     x //= 100
                     y //= 100
 
-                    # Check if the user has clicked on a queen
+                    # If the cell is already a queen, remove it
                     if self.grid[x][y] == 1:
                         self.grid[x][y] = 0
                         n_valid_queens -= 1
@@ -202,29 +203,51 @@ class Queens:
                         color = color_map[queen_color_zone]
                         pygame.draw.rect(screen, color, (x * 100, y * 100, 100, 100))
 
-
+                    # If the cell is not a queen, place a queen (if valid)
                     else:
                         # Check if queen placement adheres to game rules
                         checks = self.is_queen_correct(x, y)
                         if all(checks.values()):
-                            print("Queen placement is valid")
+                            self.logger.info("Queen placement is valid")
                             self.grid[x][y] = 1
                             n_valid_queens += 1
                             # Resize queen image to fit grid cell (100x100)
                             scaled_queen = pygame.transform.scale(self.queen_image, (100, 100))
                             screen.blit(scaled_queen, (x * 100, y * 100))
                         else:
-                            print("Queen placement is invalid")
+                            self.logger.info("Queen placement is invalid")
                             for key, value in checks.items():
                                 if not value:
-                                    print(f"There is another queen in the same {key}.")
+                                    self.logger.info(f"There is another queen in the same {key}.")
 
+
+                #  If it is a right click, add or remove a cross to the cell
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                    x, y = pygame.mouse.get_pos()
+                    x //= 100
+                    y //= 100
+                    if self.grid[x][y] == 0:
+                        # Add a cross to the cell
+                        pygame.draw.line(screen, (0, 0, 0), (x * 100, y * 100), (x * 100 + 100, y * 100 + 100), 5)
+                        pygame.draw.line(screen, (0, 0, 0), (x * 100 + 100, y * 100), (x * 100, y * 100 + 100), 5)
+                        self.grid[x][y] = -1
+
+                    elif self.grid[x][y] == -1:
+                        # Remove the cross from the cell
+                        queen_color_zone = self.get_color_zone(x, y)
+                        color = color_map.get(queen_color_zone)
+
+                        pygame.draw.line(screen, color, (x * 100, y * 100), (x * 100 + 100, y * 100 + 100), 5)
+                        pygame.draw.line(screen, color, (x * 100 + 100, y * 100), (x * 100, y * 100 + 100), 5)
+                        self.grid[x][y] = 0
+
+                
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
                 # Check if the user has placed all queens
                 if n_valid_queens == self.n:
-                    print("All queens are placed correctly!")
+                    self.logger.info("All queens are placed correctly!")
                     running = False
                     break
 
