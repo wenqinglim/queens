@@ -8,13 +8,13 @@ The zones force the grid to only have a single possible solution.
 """
 import pygame
 import logging
-
+import numpy as np
 
 class Queens:
     def __init__(self, logger: logging.Logger):
         self.logger = logger
         self.n = None
-        self.grid = []
+        self.grid = np.array([])
         self.queens = []
         self.color_zones = []
         self.color_zone_queens = {}
@@ -31,7 +31,7 @@ class Queens:
         self.n = game_config["n"]
 
         # Initialize the grid
-        self.grid = [[0 for _ in range(self.n)] for _ in range(self.n)]
+        self.grid = np.zeros((self.n, self.n))
         self.logger.info(f"Initialized {self.n}x{self.n} grid")
 
         # Initialize the color zones from game config
@@ -49,6 +49,65 @@ class Queens:
         # Print grid
         self.logger.info(f"Grid: {self.grid}")
 
+    def is_queen_same_column(self, x: int) -> bool:
+        """Check if the queen is in the same column as another queen   """
+        if self.grid[x].sum() == 1:
+            return True
+        return False
+    
+    def is_queen_same_row(self, y: int) -> bool:
+        """Check if the queen is in the same row as another queen"""
+        if self.grid[:, y].sum() == 1:
+            return True
+        return False        
+    
+    def get_color_zone(self, x: int, y: int) -> bool:
+        """Get the color zone of the coordinates"""
+        for color_zone in self.color_zones:
+            x_coords = color_zone["x"]
+            y_coords = color_zone["y"]
+            for x_coord, y_coord in zip(x_coords, y_coords):
+                if x == x_coord and y == y_coord:
+                    return color_zone["color"]
+        return None
+                
+    def is_queen_same_color_zone(self, x: int, y: int) -> bool:
+        """Check if the queen is in the same color zone as another queen"""
+        queen_color_zone = self.get_color_zone(x, y)
+        if queen_color_zone in self.color_zone_queens.keys():
+            return True
+        return False
+    
+    def is_queen_same_color_zone(self, x: int, y: int) -> bool:
+        """Check if the queen is in the same color zone as another queen"""
+        for color_zone in self.color_zones:
+            x_coords = color_zone["x"]
+            y_coords = color_zone["y"]
+            for x_coord, y_coord in zip(x_coords, y_coords):
+                if x == x_coord and y == y_coord:
+                    if color_zone["color"] in self.color_zone_queens.keys():
+                        return True
+                else:
+                    self.color_zone_queens[color_zone["color"]] = (x, y)
+                    self.logger.info(f"Added queen to color zone {color_zone['color']}: {self.color_zone_queens[color_zone['color']]}")
+                    return False
+
+    def is_queen_same_corner(self, x: int, y: int) -> bool:
+        """Check if the queen is in the corner of another queen"""
+        corners = []
+        if x > 0 and y > 0:  # Top-left corner
+            corners.append(self.grid[x-1][y-1])
+        if x > 0 and y < self.n-1:  # Top-right corner
+            corners.append(self.grid[x-1][y+1])
+        if x < self.n-1 and y > 0:  # Bottom-left corner
+            corners.append(self.grid[x+1][y-1])
+        if x < self.n-1 and y < self.n-1:  # Bottom-right corner
+            corners.append(self.grid[x+1][y+1])
+
+        if 1 in corners:
+            return True
+        return False
+
     def is_queen_correct(self, x: int, y: int) -> dict:
         """Check if queen placement adheres to game rules:
             1. No two queens can be in the same row
@@ -62,38 +121,12 @@ class Queens:
             "color_zone": True,
             "corner": True,
         }
-        # Check if the queen is in the same row as another queen
-        for i in range(self.n):
-            if self.grid[x][i] == 1:
-                checks["row"] = False
+        checks["row"] = not self.is_queen_same_row(y)
+        checks["column"] = not self.is_queen_same_column(x)
+        checks["color_zone"] = not self.is_queen_same_color_zone(x, y)
+        checks["corner"] = not self.is_queen_same_corner(x, y)
 
-        # Check if the queen is in the same column as another queen
-        for i in range(self.n):
-            if self.grid[i][y] == 1:
-                checks["column"] = False
-
-        # Check if the queen is in the same color zone as another queen
-        for color_zone in self.color_zones:
-            if x in color_zone["x"] and y in color_zone["y"]:
-                if color_zone["color"] in self.color_zone_queens:
-                    checks["color_zone"] = False
-                else:
-                    self.color_zone_queens[color_zone["color"]] = (x, y)
-
-        # Check if the queen is in the corner of another queen
-        # Check each diagonal direction only if within grid bounds
-        corners = []
-        if x > 0 and y > 0:  # Top-left corner
-            corners.append(self.grid[x-1][y-1])
-        if x > 0 and y < self.n-1:  # Top-right corner
-            corners.append(self.grid[x-1][y+1])
-        if x < self.n-1 and y > 0:  # Bottom-left corner
-            corners.append(self.grid[x+1][y-1])
-        if x < self.n-1 and y < self.n-1:  # Bottom-right corner
-            corners.append(self.grid[x+1][y+1])
-        
-        if 1 in corners:  # If any corner has a queen
-            checks["corner"] = False
+        self.logger.info(f"Checks: {checks}")
 
         return checks
                 
@@ -106,8 +139,12 @@ class Queens:
         pygame.display.set_caption("Queens")
         clock = pygame.time.Clock()
 
-        n_valid_queens = 0
+        # Initialize font for clock display
+        font = pygame.font.Font(None, 36)
+        start_time = pygame.time.get_ticks()
 
+        n_valid_queens = 0
+        running = True
         # while True:
         # Display the grid
         for i in range(self.n):
@@ -124,13 +161,25 @@ class Queens:
         # Display color zones
         for color_zone in self.color_zones:
             color = color_zone["color"]
-            for x in color_zone["x"]:
-                for y in color_zone["y"]:
-                    pygame.draw.rect(screen, color_map[color], (x * 100, y * 100, 100, 100))
+            x_coords = color_zone["x"]
+            y_coords = color_zone["y"]
+            for x_coord, y_coord in zip(x_coords, y_coords):
+                pygame.draw.rect(screen, color_map[color], (x_coord * 100, y_coord * 100, 100, 100))
 
-        while True:
+        while running:
 
-            # self.logger.info(f"Grid: {self.grid}")
+            # Calculate elapsed time
+            elapsed_time = (pygame.time.get_ticks() - start_time) // 1000  # Convert to seconds
+            minutes = elapsed_time // 60
+            seconds = elapsed_time % 60
+            
+            # Clear the top area for the clock
+            pygame.draw.rect(screen, (255, 255, 255), (0, 0, 100, 30))
+            
+            # Render clock text
+            time_text = font.render(f"{minutes:02d}:{seconds:02d}", True, (0, 0, 0))
+            screen.blit(time_text, (10, 10))
+
             # Update the display when user places a queen
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -143,12 +192,16 @@ class Queens:
                         self.grid[x][y] = 0
                         n_valid_queens -= 1
 
-                        for color_zone in self.color_zones:
-                            if x in color_zone["x"] and y in color_zone["y"]:
-                                del self.color_zone_queens[color_zone["color"]]
+                        queen_color_zone = self.get_color_zone(x, y)
+                        if queen_color_zone in self.color_zone_queens.keys():
+                            del self.color_zone_queens[queen_color_zone]
 
                         # Remove the queen image from the screen
                         screen.blit(pygame.Surface((100, 100)), (x * 100, y * 100))
+                        # Add color zone back to the screen
+                        color = color_map[queen_color_zone]
+                        pygame.draw.rect(screen, color, (x * 100, y * 100, 100, 100))
+
 
                     else:
                         # Check if queen placement adheres to game rules
@@ -166,14 +219,23 @@ class Queens:
                                 if not value:
                                     print(f"There is another queen in the same {key}.")
 
-                # Check if the user has placed all queens
-                if n_valid_queens == self.n:
-                    print("All queens are placed correctly!")
-                    pygame.quit()
-
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
-                # Update the display
-                pygame.display.update()
-                clock.tick(60)
+                # Check if the user has placed all queens
+                if n_valid_queens == self.n:
+                    print("All queens are placed correctly!")
+                    running = False
+                    break
+
+            # Update the display
+            pygame.display.update()
+            clock.tick(60)
+
+        # Display the final time
+        final_time_text = font.render(f"Time taken: {minutes:02d}:{seconds:02d}", True, (0, 0, 0))
+        screen.blit(final_time_text, (10, 50))
+        pygame.display.update()
+        pygame.time.wait(3000)
+        pygame.quit()
+

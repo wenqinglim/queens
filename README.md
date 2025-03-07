@@ -5,4 +5,6 @@ Recreate Queens game as seen on LinkedIn: https://www.linkedin.com/games/queens/
 ### Environment setup
 `poetry init`
 
+## Start game
+`python src/main.py`
 
