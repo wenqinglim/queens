@@ -120,34 +120,101 @@ class Queens:
 
         return checks
 
-    def run(self):
-        # Display the grid
-        pygame.init()
-        screen = pygame.display.set_mode((self.n * 100, self.n * 100))
-        pygame.display.set_caption("Queens")
-        clock = pygame.time.Clock()
+    def display_title(
+        self,
+        screen: pygame.Surface,
+        title_font: pygame.font.Font,
+        WINDOW_WIDTH: int,
+        TITLE_HEIGHT: int,
+    ):
+        # Draw title
+        title_text = title_font.render("Queens", True, (0, 0, 0))
+        title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, TITLE_HEIGHT // 2))
+        screen.blit(title_text, title_rect)
 
-        # Initialize font for clock display
-        font = pygame.font.Font(None, 36)
-        start_time = pygame.time.get_ticks()
+    def display_frame(
+        self,
+        screen: pygame.Surface,
+        GRID_SIZE: int,
+        TITLE_HEIGHT: int,
+        FRAME_PADDING: int,
+    ):
+        frame_rect = pygame.Rect(
+            FRAME_PADDING - 2,
+            TITLE_HEIGHT + FRAME_PADDING - 2,
+            self.n * GRID_SIZE + 4,
+            self.n * GRID_SIZE + 4,
+        )
+        pygame.draw.rect(screen, (0, 0, 0), frame_rect, 2)  # Black frame
 
-        n_valid_queens = 0
-        running = True
-        # while True:
-        # Display the grid
+    def display_grid(
+        self,
+        screen: pygame.Surface,
+        GRID_SIZE: int,
+        TITLE_HEIGHT: int,
+        FRAME_PADDING: int,
+    ):
+        # Draw grid and color zones
         for i in range(self.n):
             for j in range(self.n):
-                pygame.draw.rect(screen, (0, 0, 0), (i * 100, j * 100, 100, 100))
+                cell_x = FRAME_PADDING + (i * GRID_SIZE)
+                cell_y = TITLE_HEIGHT + FRAME_PADDING + (j * GRID_SIZE)
+                pygame.draw.rect(
+                    screen, (255, 255, 255), (cell_x, cell_y, GRID_SIZE, GRID_SIZE)
+                )
 
-        # Display color zones
+    def display_color_zones(
+        self,
+        screen: pygame.Surface,
+        GRID_SIZE: int,
+        TITLE_HEIGHT: int,
+        FRAME_PADDING: int,
+    ):
+        ## Display color zones
         for color_zone in self.color_zones:
             color = color_zone["color"]
             x_coords = color_zone["x"]
             y_coords = color_zone["y"]
             for x_coord, y_coord in zip(x_coords, y_coords):
+                cell_x = FRAME_PADDING + (x_coord * GRID_SIZE)
+                cell_y = TITLE_HEIGHT + FRAME_PADDING + (y_coord * GRID_SIZE)
                 pygame.draw.rect(
-                    screen, color_map[color], (x_coord * 100, y_coord * 100, 100, 100)
+                    screen, color_map[color], (cell_x, cell_y, GRID_SIZE, GRID_SIZE)
                 )
+
+    def run(self):
+        # Constants for UI layout
+        GRID_SIZE = 100  # Size of each cell
+        FRAME_PADDING = 40  # Padding around the grid
+        TITLE_HEIGHT = 60  # Height for title area
+
+        # Calculate total window size
+        WINDOW_WIDTH = self.n * GRID_SIZE + (FRAME_PADDING * 2)
+        WINDOW_HEIGHT = self.n * GRID_SIZE + (FRAME_PADDING * 2) + TITLE_HEIGHT
+
+        # Display the grid
+        pygame.init()
+        # screen = pygame.display.set_mode((self.n * 100, self.n * 100))
+        screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        pygame.display.set_caption("Queens")
+        clock = pygame.time.Clock()
+
+        # Initialize fonts
+        title_font = pygame.font.Font(None, 48)
+        clock_font = pygame.font.Font(None, 30)
+
+        start_time = pygame.time.get_ticks()
+        n_valid_queens = 0
+        running = True
+
+        # Display the grid
+        screen.fill((255, 255, 255))  # White background
+
+        self.display_title(screen, title_font, WINDOW_WIDTH, TITLE_HEIGHT)
+        self.display_frame(screen, GRID_SIZE, TITLE_HEIGHT, FRAME_PADDING)
+        self.display_grid(screen, GRID_SIZE, TITLE_HEIGHT, FRAME_PADDING)
+        self.display_color_zones(screen, GRID_SIZE, TITLE_HEIGHT, FRAME_PADDING)
 
         while running:
             # Calculate elapsed time
@@ -157,20 +224,26 @@ class Queens:
             minutes = elapsed_time // 60
             seconds = elapsed_time % 60
 
-            # Clear the top area for the clock
-            pygame.draw.rect(screen, (255, 255, 255), (0, 0, 100, 30))
+            # Clear previous time text area with background color
+            time_rect = pygame.Rect(
+                FRAME_PADDING, FRAME_PADDING // 2, 130, 30
+            )  # Width=150 to fit time text
+            pygame.draw.rect(
+                screen, (255, 255, 255), time_rect
+            )  # Fill with white background
 
-            # Render clock text
-            time_text = font.render(f"{minutes:02d}:{seconds:02d}", True, (0, 0, 0))
-            screen.blit(time_text, (10, 10))
+            time_text = clock_font.render(
+                f"Time: {minutes:02d}:{seconds:02d}", True, (0, 0, 0)
+            )
+            screen.blit(time_text, (FRAME_PADDING, FRAME_PADDING // 2))
 
             # Update the display when user places a queen
             for event in pygame.event.get():
                 # If it is a left click, place or remove a queen
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     x, y = pygame.mouse.get_pos()
-                    x //= 100
-                    y //= 100
+                    x = (x - FRAME_PADDING) // GRID_SIZE
+                    y = (y - (TITLE_HEIGHT + FRAME_PADDING)) // GRID_SIZE
 
                     # If the cell is already a queen, remove it
                     if self.grid[x][y] == 1:
@@ -207,7 +280,9 @@ class Queens:
                             scaled_queen = pygame.transform.scale(
                                 self.queen_image, (100, 100)
                             )
-                            screen.blit(scaled_queen, (x * 100, y * 100))
+                            cell_x = FRAME_PADDING + (x * GRID_SIZE)
+                            cell_y = TITLE_HEIGHT + FRAME_PADDING + (y * GRID_SIZE)
+                            screen.blit(scaled_queen, (cell_x, cell_y))
                         else:
                             self.logger.info("Queen placement is invalid")
                             for key, value in checks.items():
@@ -219,22 +294,24 @@ class Queens:
                 #  If it is a right click, add or remove a cross to the cell
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                     x, y = pygame.mouse.get_pos()
-                    x //= 100
-                    y //= 100
+                    x = (x - FRAME_PADDING) // GRID_SIZE
+                    y = (y - (TITLE_HEIGHT + FRAME_PADDING)) // GRID_SIZE
+                    cell_x = FRAME_PADDING + (x * GRID_SIZE)
+                    cell_y = TITLE_HEIGHT + FRAME_PADDING + (y * GRID_SIZE)
                     if self.grid[x][y] == 0:
                         # Add a cross to the cell
                         pygame.draw.line(
                             screen,
                             (0, 0, 0),
-                            (x * 100, y * 100),
-                            (x * 100 + 100, y * 100 + 100),
+                            (cell_x, cell_y),
+                            (cell_x + GRID_SIZE, cell_y + GRID_SIZE),
                             5,
                         )
                         pygame.draw.line(
                             screen,
                             (0, 0, 0),
-                            (x * 100 + 100, y * 100),
-                            (x * 100, y * 100 + 100),
+                            (cell_x + GRID_SIZE, cell_y),
+                            (cell_x, cell_y + GRID_SIZE),
                             5,
                         )
                         self.grid[x][y] = -1
@@ -247,15 +324,15 @@ class Queens:
                         pygame.draw.line(
                             screen,
                             color,
-                            (x * 100, y * 100),
-                            (x * 100 + 100, y * 100 + 100),
+                            (cell_x, cell_y),
+                            (cell_x + GRID_SIZE, cell_y + GRID_SIZE),
                             5,
                         )
                         pygame.draw.line(
                             screen,
                             color,
-                            (x * 100 + 100, y * 100),
-                            (x * 100, y * 100 + 100),
+                            (cell_x + GRID_SIZE, cell_y),
+                            (cell_x, cell_y + GRID_SIZE),
                             5,
                         )
                         self.grid[x][y] = 0
@@ -274,10 +351,10 @@ class Queens:
             clock.tick(60)
 
         # Display the final time
-        final_time_text = font.render(
-            f"Time taken: {minutes:02d}:{seconds:02d}", True, (0, 0, 0)
+        final_time_text = clock_font.render(
+            f"Solved! Time taken: {minutes:02d}:{seconds:02d}", True, (0, 0, 0)
         )
-        screen.blit(final_time_text, (10, 50))
+        screen.blit(final_time_text, (FRAME_PADDING, WINDOW_HEIGHT - FRAME_PADDING))
         pygame.display.update()
         pygame.time.wait(3000)
         pygame.quit()

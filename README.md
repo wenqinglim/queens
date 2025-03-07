@@ -1,6 +1,8 @@
 # queens
 Recreate Queens game as seen on LinkedIn: https://www.linkedin.com/games/queens/
 
+![Queens Game Screenshot](assets/images/queen_games_v1.png)
+
 ## Dev Setup
 ### Environment setup
 `poetry init`
@@ -13,6 +15,7 @@ Recreate Queens game as seen on LinkedIn: https://www.linkedin.com/games/queens/
 
 ## Start game
 `python src/main.py`
+
 
 ## Game play:
 1. Left-click to place or remove queen
